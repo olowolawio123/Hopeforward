@@ -12,26 +12,31 @@ export default function ForgotPassword() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+
     setLoading(true)
     setMessage('')
     setError('')
 
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      {
-        redirectTo: `${window.location.origin}/reset-password`,
-      }
-    )
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setMessage(
-        'If an account exists for this email, a password reset link will be sent. Please check your inbox and spam folder.'
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: 'https://hopeforward.onrender.com/reset-password',
+        }
       )
-    }
 
-    setLoading(false)
+      if (error) {
+        setError(error.message)
+      } else {
+        setMessage(
+          'If an account exists for this email, a password reset link will be sent. Please check your inbox and spam folder.'
+        )
+      }
+    } catch {
+      setError('Unable to send the reset link. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -97,7 +102,10 @@ export default function ForgotPassword() {
           )}
 
           {error && (
-            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+            <p
+              role="alert"
+              className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            >
               {error}
             </p>
           )}
