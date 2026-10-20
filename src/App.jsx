@@ -7,6 +7,7 @@ import AdminDashboard from './AdminDashboard.jsx'
 import AdminApplicationDetails from './AdminApplicationDetails.jsx'
 import ForgotPassword from './ForgotPassword.jsx'
 import ResetPassword from './ResetPassword.jsx'
+import AuthCallback from './AuthCallback.jsx'
 import {
   HeartHandshake,
   ShieldCheck,
@@ -512,6 +513,7 @@ function HomePage() {
   )
 }
 
+
 export default function App() {
   return (
     <Routes>
@@ -520,10 +522,33 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/applications/:id" element={<AdminApplicationDetails />}/>
+      <Route
+        path="/admin/applications/:id"
+        element={<AdminApplicationDetails />}
+      />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="*" element={<HomePage />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
+      <Route
+        path="*"
+        element={
+          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center">
+            <h1 className="text-3xl font-bold text-slate-900">
+              Page Not Found
+            </h1>
+            <p className="mt-3 text-slate-600">
+              The page you requested does not exist.
+            </p>
+            <Link
+              to="/"
+              className="mt-6 rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white"
+            >
+              Return Home
+            </Link>
+          </div>
+        }
+      />
     </Routes>
   )
 }

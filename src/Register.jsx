@@ -29,8 +29,10 @@ export default function Register() {
         email: email.trim(),
         password,
         options: {
-          data: { full_name: fullName.trim() },
-          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            full_name: fullName.trim(),
+          },
+          emailRedirectTo: 'https://hopeforward.onrender.com/auth/callback',
         },
       })
 

@@ -17,31 +17,45 @@ export default function ResetPassword() {
   useEffect(() => {
     let active = true
 
-    async function checkSession() {
-      const { data, error } = await supabase.auth.getSession()
+    async function prepareReset() {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      const urlError = params.get('error_description')
 
-      if (!active) return
+      if (urlError) {
+        throw new Error(urlError.replace(/\+/g, ' '))
+      }
 
-      if (error || !data.session) {
-        setError(
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) throw error
+      }
+
+      const { data, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) throw sessionError
+
+      if (!data.session) {
+        throw new Error(
           'This reset link is invalid or has expired. Please request a new one.'
         )
-      } else {
-        setReady(true)
       }
+
+      if (active) setReady(true)
     }
 
-    checkSession()
+    prepareReset().catch((err) => {
+      if (active) {
+        setError(err.message || 'Unable to verify the reset link.')
+      }
+    })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return
 
-      if (
-        event === 'PASSWORD_RECOVERY' ||
-        (event === 'SIGNED_IN' && session)
-      ) {
+      if (event === 'PASSWORD_RECOVERY' && session) {
         setReady(true)
         setError('')
       }
@@ -53,8 +67,8 @@ export default function ResetPassword() {
     }
   }, [])
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
     setError('')
     setMessage('')
 
@@ -70,29 +84,28 @@ export default function ResetPassword() {
 
     setLoading(true)
 
-    const { error } = await supabase.auth.updateUser({
-      password,
-    })
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
 
-    setLoading(false)
+      if (error) throw error
 
-    if (error) {
-      setError(error.message)
-      return
+      setMessage('Your password has been changed successfully.')
+
+      await supabase.auth.signOut()
+
+      window.setTimeout(() => {
+        navigate('/login', { replace: true })
+      }, 1800)
+    } catch (err) {
+      setError(err.message || 'Unable to update your password.')
+    } finally {
+      setLoading(false)
     }
-
-    setMessage('Your password has been changed successfully.')
-
-    await supabase.auth.signOut()
-
-    setTimeout(() => {
-      navigate('/login', { replace: true })
-    }, 1800)
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+      <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
         <Link
           to="/login"
           className="mb-8 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-emerald-700"
@@ -128,7 +141,6 @@ export default function ResetPassword() {
               >
                 New password
               </label>
-
               <input
                 id="password"
                 type="password"
@@ -139,7 +151,7 @@ export default function ResetPassword() {
                 required
                 disabled={!ready || loading}
                 placeholder="At least 8 characters"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 disabled:bg-slate-100"
               />
             </div>
 
@@ -150,7 +162,6 @@ export default function ResetPassword() {
               >
                 Confirm new password
               </label>
-
               <input
                 id="confirmPassword"
                 type="password"
@@ -161,7 +172,7 @@ export default function ResetPassword() {
                 required
                 disabled={!ready || loading}
                 placeholder="Enter your new password again"
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600 disabled:bg-slate-100"
               />
             </div>
 
@@ -174,7 +185,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={!ready || loading}
-              className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? 'Updating password...'
@@ -184,7 +195,7 @@ export default function ResetPassword() {
             </button>
           </form>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
